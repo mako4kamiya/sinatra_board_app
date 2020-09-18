@@ -1,0 +1,23 @@
+<% if session[:user] %>
+  <form action="/logout" method="post">
+    <input type="hidden" name="_method" value="DELETE">
+    <input type="submit" value="ログアウト">
+  </form>
+<% end %>
+
+<form action="/posts" method="post" enctype="multipart/form-data">
+  <div>
+    <label for="content">投稿内容: </label>
+    <textarea name="content" cols=50 rows=10></textarea>
+  </div>
+  <div>
+    <label for="image">画像選択: </label>
+    <input type="file" name="image">
+  </div>
+  <input type="submit" value="投稿">
+</form>
+
+<% @posts.each do |post| %>
+    <p><%= post['content'] %></p>
+    <img src"/images/<%= post['image_path']%>">
+<% end %>
