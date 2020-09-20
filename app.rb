@@ -10,6 +10,7 @@ require 'pry'
 
 enable :sessions
 
+# DB接続
 client = PG::connect(
     :host => ENV.fetch("DB_HOST", "localhost"),
     :user => ENV.fetch("DB_USER","postgres"),
@@ -18,80 +19,124 @@ client = PG::connect(
 )
 
 
+###############################
+## サインアップ(ユーザー新規登録) ##
+###############################
+# サインアップフォーム画面を表示
 get '/signup' do
+    if session[:user]
+        redirect '/boards/new'
+    end
     return erb :signup
 end
-  
+# フォームに入力した情報をDBへ記録
 post '/signup' do
     name = params[:name]
     email = params[:email]
     password = params[:password]
+    password_digest = Digest::SHA512.hexdigest(password)
     client.exec_params(
         "INSERT INTO users (name, email, password) VALUES ($1, $2, $3)",
-        [name, email, password]
+        [name, email, password_digest]
     )
+    # ついでにログイン処理
     user = client.exec_params(
         "SELECT * from users WHERE email = $1 AND password = $2 LIMIT 1",
-        [email, password]
+        [email, password_digest]
     ).to_a.first
     session[:user] = user
-    return redirect '/posts'
+    return redirect '/boards/new'
 end
-  
+
+
+######################
+## ログイン・ログアウト ##
+######################
+# ログインフォーム画面の表示
 get '/login' do
+    if session[:user]
+        redirect '/boards/new'
+    end
     return erb :login
 end
-  
+# フォームに入力した情報をDBへ記録
 post '/login' do
     email = params[:email]
-    # password = params[:password] 仮
-    password = "39a5e04aaff7455d9850c605364f514c11324ce64016960d23d5dc57d3ffd8f49a739468ab8049bf18eef820cdb1ad6c9015f838556bc7fad4138b23fdf986c7"
+    password = params[:password]
+    password_digest = Digest::SHA512.hexdigest(password)
     user = client.exec_params(
         "SELECT * FROM users WHERE email = $1 AND password = $2 LIMIT 1",
-        [email, password]
+        [email, password_digest]
     ).to_a.first
-    # binding.pry
     if user.nil?
-        return erb :login
+        return redirect '/signup'
     else
         session[:user] = user
-        return redirect '/posts'
+        return redirect '/boards/new'
     end
 end
-  
+# ログアウト
 delete '/logout' do
     session[:user] = nil
     return redirect '/login'
 end
 
-get '/posts' do
-    if session[:user].nil?
-        return redirect '/login'
-    end
-    @posts = client.exec_params("SELECT * from posts").to_a
-    return erb :posts
+
+################
+## 掲示板の作成 ##
+################
+# 掲示板の作成画面を表示
+get '/boards/new' do
+    # 全ての掲示板のリンクを表示
+    @boards = client.exec_params("SELECT * from boards").to_a
+    return erb :new_board
 end
-  
-post '/posts' do
-    user_id = session[:user]['id'] #仮
-    board_id = "1" #仮
+# フォームに入力した情報をDBへ記録
+post '/boards' do
+    name = params[:name]
+    client.exec_params(
+        "INSERT INTO boards (name) VALUES ($1)",
+        [name]
+    )
+    new_board = client.exec_params(
+        "SELECT * from boards WHERE name = $1",
+        [name]
+    ).to_a.first
+    return redirect "/boards/#{new_board["id"]}"
+end
+
+
+#########
+## 投稿 ##
+#########
+# 掲示板ごとの投稿内容の画面を表示
+get '/boards/:id' do
+    @board_id = params[:id]
+    @board = client.exec_params(
+        "SELECT * from boards WHERE id = $1 LIMIT 1",
+        [@board_id]
+    ).to_a.first
+    @posts = client.exec_params(
+        "SELECT * from posts WHERE board_id = $1",
+        [@board_id]
+    ).to_a
+    return erb :board
+end
+# フォームに入力した情報をDBへ記録
+post '/boards/:id/posts' do
+    board_id = params[:id]
+    name = session[:user]["name"]
     content = params[:content]
-    image_path = ""
+    image_path = ''
     if !params[:image].nil?
-        # tempfile = params[:image][:tempfile]
-        # save_to = "./public/images/#{params[:image][:filename]}"
-        # FileUtils.mv(tempfile, save_to)
+        tempfile = params[:image][:tempfile]
+        save_to = "./public/images/#{params[:image][:filename]}"
+        FileUtils.mv(tempfile, save_to)
         image_path = params[:image][:filename]
     end
-    # binding.pry
     client.exec_params(
-        "INSERT INTO posts (user_id, board_id, content, image_path) VALUES ($1, $2, &3, &4)",
-        [content, image_path]
+        "INSERT INTO posts (name, content, image_path, board_id) VALUES ($1, $2, $3, $4)",
+        [name, content, image_path, board_id]
     )
-    redirect '/posts'
-end
-
-
-get '/boards/new' do
-    return erb :new_board
+    return redirect "/boards/#{board_id}"
 end

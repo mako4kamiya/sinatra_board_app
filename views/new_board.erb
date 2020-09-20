@@ -1,9 +1,20 @@
-<h1>掲示板の作成</h1>
-
-<form action="/boards" method="post">
+<% if session[:user] %>
+<h1 class="mb-5">掲示板の作成</h1>
+<div class="mb-5">
+  <form action="/boards" method="post">
+    <div>
+      <label for="name">掲示板名: </label>
+      <input type="text" name="name">_board
+    </div>
+    <input type="submit" value="作成">
+  </form>
+</div>
+<% end %>
+<div>
+  <h2>掲示板の選択</h2>
+  <% @boards.each do |board| %>
   <div>
-    <label for="name">掲示板名: </label>
-    <input type="text" name="name">
+    <a href="/boards/<%= board["id"] %>"><%= board["name"] %>_board</a>
   </div>
-  <input type="submit" value="作成">
-</form>
+  <% end %>
+</div>

@@ -1,0 +1,23 @@
+<h1 class="mb-5"><%= @board["name"] %>_board</h1>
+<% if session[:user] %>
+<div class="mb-5">
+    <form action="/boards/<%= @board_id %>/posts" method="post" enctype="multipart/form-data">
+        <div>
+            <label for="content">投稿内容: </label>
+            <textarea name="content" cols=50 rows=10></textarea>
+            <input type="file" name="image">
+        </div>
+        <input type="submit" value="投稿">
+    </form>
+</div>
+<% end %>
+<div>
+    <% @posts.each do |post| %>
+    <div class="mb-5">
+        <p>名前：<%= post['name'] %>さん</p>
+        <p>投稿内容：<%= post['content'] %></p>
+        <img style="width: 200px;" src="/images/<%= post['image_path']%>">
+    </div>
+    <hr>
+    <% end %>
+</div>
