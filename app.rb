@@ -18,6 +18,9 @@ client = PG::connect(
     :dbname => ENV.fetch("DB_NAME","board")
 )
 
+get '/' do
+    redirect 'login'
+end
 
 ###############################
 ## サインアップ(ユーザー新規登録) ##
