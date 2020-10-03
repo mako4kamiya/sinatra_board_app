@@ -47,9 +47,9 @@ CREATE TABLE posts(
 
 ### 環境変数の設定
 ```
-& export DB_USER=$(whoami)
-& export DB_NAME=任意のデータベース名
-& export DB_PASSWORD=〇〇〇〇 //password設定をしていたら
+$ export DB_USER=$(whoami)
+$ export DB_NAME=任意のデータベース名
+$ export DB_PASSWORD=〇〇〇〇 //password設定をしていたら
 ```
 
 ### Sinatraアプリを起動
